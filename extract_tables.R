@@ -13,10 +13,12 @@ pdf_list <- list.files(path = path, pattern = "*.pdf",
 trim_page <- function(pg, n1, n2) {
   if (length(n1) > 0) {
     txt <- pg[[1]]
+    # Remove header with single "\n" symbol
+    txt[n1] <- strsplit(txt[n1], "\n")[[1]][2]
     if (length(n2 > 0)) {
-      p_cut <- txt[(n1 + 1):(n2 - 1)]
+      p_cut <- txt[n1:(n2 - 1)]
     } else {
-      p_cut <- txt[(n1 + 1):length(txt)]
+      p_cut <- txt[n1:length(txt)]
     }
     p_cut <- gsub("\\s{2,}", global_sep, p_cut, perl = TRUE)
     p_cut <- gsub("(?<=[0-9])\\s(?![0-9])", global_sep, p_cut, perl = TRUE)
@@ -34,7 +36,7 @@ extract_table <- function(fn_pdf) {
 
   text <- pdf_text(fn_pdf)
   # WARNING! Delimiter may change for another OS / pdf !!! Check "\n" or "\r\n"
-  pages <- sapply(X = text, FUN = strsplit, split = "\n", USE.NAMES = FALSE)
+  pages <- sapply(X = text, FUN = strsplit, split = "\n\n", USE.NAMES = FALSE)
   # Match starting row of data in table
   n_start <- sapply(pages, grep, pattern = "ФИО", USE.NAMES = FALSE)
   # Match ending row of data in table
@@ -54,13 +56,35 @@ extract_table <- function(fn_pdf) {
 
 x <- lapply(pdf_list, extract_table)
 
-write.table(data.frame(
-  "Список_от", "Месяц_год", "Номер", "Организация", "Табельный",
-  "Счет", "Получатель", "Сумма", "Плательщик"),
-file = "test0.csv", sep = global_sep, row.names = F, col.names = F, quote = F)
+out_file <- paste0(path, "test0.csv", collapse = "/")
+
+write.table(
+  data.frame(
+    "Список_от",
+    "Месяц_год",
+    "Номер",
+    "Организация",
+    "Табельный",
+    "Счет",
+    "Получатель",
+    "Сумма",
+    "Плательщик"
+  ),
+  file = out_file,
+  sep = global_sep,
+  row.names = FALSE,
+  col.names = FALSE,
+  quote = FALSE
+)
 
 lapply(x, function(y) {
-  write.table(y$fulltable, file = "test0.csv",
-              append = TRUE, quote = FALSE, sep = global_sep,
-              row.names = FALSE, col.names = FALSE)
+  write.table(
+    y$fulltable,
+    file = out_file,
+    append = TRUE,
+    quote = FALSE,
+    sep = global_sep,
+    row.names = FALSE,
+    col.names = FALSE
+  )
 })
